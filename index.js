@@ -1,21 +1,25 @@
 const core = require('@actions/core');
-const wait = require('./wait');
+const github = require('@actions/github');
 
-
-// most @actions toolkit packages have async methods
-async function run() {
+async function createIsse() {
   try {
-    const ms = core.getInput('milliseconds');
-    core.info(`Waiting ${ms} milliseconds ...`);
+    const token = core.getInput('token');
+    const title = core.getInput('title');
+    const body = core.getInput('body');
+    const assignees = core.getInput('assignees');
+    
+    const octokit = github.getOctokit(token)
 
-    core.debug((new Date()).toTimeString()); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
-    await wait(parseInt(ms));
-    core.info((new Date()).toTimeString());
+    const response = await octokit.rest.issues.create({
+      ...github.context.repo,
+      title,
+      body,
+      assignees: assignees ? assignees.split('\n') : undefined
+    });
 
-    core.setOutput('time', new Date().toTimeString());
+    core.setOutput('issue', JSON.stringify(response.data));
   } catch (error) {
     core.setFailed(error.message);
   }
 }
-
-run();
+createIsse();
